@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>物尽其用 · 校园物品智能管家</title>
+<style>
+:root{--green:#2E9E5B;--dark:#1B5E3B;--leaf:#6FCF97;--mint:#E8F5EC;--orange:#F2994A;--cream:#FAF7F0;--gray:#5B6B63;--red:#E25555;--white:#fff;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:"Microsoft YaHei","微软雅黑",sans-serif;background:#eef2ef;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:0;margin:0;}
+.phone{width:100%;max-width:420px;min-height:100vh;background:var(--white);border-radius:28px;box-shadow:0 20px 50px rgba(27,94,59,.25);overflow:hidden;}
+.header{background:var(--green);color:var(--white);padding:18px 20px;display:flex;align-items:center;justify-content:space-between;}
+.header h1{font-size:20px;font-weight:700;letter-spacing:1px;}
+.header .dot{width:10px;height:10px;background:var(--white);border-radius:50%;box-shadow:0 0 0 5px rgba(255,255,255,.3);}
+.banner{background:var(--mint);padding:14px 20px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #d9e9df;}
+.banner .badge{background:var(--orange);color:#fff;font-size:12px;padding:3px 9px;border-radius:12px;font-weight:700;white-space:nowrap;}
+.banner .msg{font-size:13px;color:var(--dark);}
+.searchbar{margin:16px 20px;background:#f2f5f3;border-radius:22px;display:flex;align-items:center;padding:10px 16px;gap:8px;}
+.searchbar input{border:none;outline:none;background:transparent;flex:1;font-size:15px;color:var(--dark);}
+.searchbar .go{background:var(--green);color:#fff;border:none;border-radius:18px;padding:7px 16px;font-size:13px;font-weight:700;cursor:pointer;}
+.tabs{display:flex;margin:0 20px 14px;background:#f2f5f3;border-radius:12px;padding:4px;}
+.tab{flex:1;text-align:center;padding:9px;font-size:13px;color:var(--gray);border-radius:9px;cursor:pointer;font-weight:600;}
+.tab.active{background:var(--white);color:var(--green);box-shadow:0 2px 6px rgba(0,0,0,.06);}
+.list{padding:0 20px 20px;max-height:420px;overflow-y:auto;}
+.item{display:flex;align-items:center;gap:12px;background:#fafbfa;border:1px solid #eef1ef;border-radius:14px;padding:12px;margin-bottom:10px;}
+.item .ico{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;}
+.item .info{flex:1;}
+.item .info .name{font-size:15px;font-weight:700;color:var(--dark);}
+.item .info .loc{font-size:12px;color:var(--gray);margin-top:2px;}
+.item .tag{font-size:11px;padding:3px 8px;border-radius:10px;font-weight:700;white-space:nowrap;}
+.tag.green{background:var(--mint);color:var(--green);}
+.tag.orange{background:#FDEFE4;color:var(--orange);}
+.tag.red{background:#FDEAEA;color:var(--red);}
+.addbtn{background:var(--green);color:#fff;border:none;border-radius:24px;padding:14px;font-size:16px;font-weight:700;margin:4px 20px 20px;cursor:pointer;width:calc(100% - 40px);}
+.toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(27,94,59,.95);color:#fff;padding:16px 26px;border-radius:14px;font-size:15px;font-weight:700;display:none;z-index:99;text-align:center;max-width:80%;box-shadow:0 10px 30px rgba(0,0,0,.3);}
+.modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:100;}
+.modal .card{background:#fff;border-radius:20px;width:340px;padding:24px;}
+.modal .card h3{color:var(--dark);font-size:18px;margin-bottom:16px;}
+.modal .card input{width:100%;border:1px solid #d9e9df;border-radius:10px;padding:11px 14px;font-size:15px;margin-bottom:12px;outline:none;}
+.modal .card input:focus{border-color:var(--green);}
+.modal .row{display:flex;gap:10px;}
+.modal .btn{flex:1;border:none;border-radius:12px;padding:12px;font-size:15px;font-weight:700;cursor:pointer;}
+.modal .btn.cancel{background:#f2f5f3;color:var(--gray);}
+.modal .btn.ok{background:var(--green);color:#fff;}
+.hint{text-align:center;font-size:11px;color:var(--gray);padding-bottom:14px;}
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="header"><h1>🌿 物尽其用</h1><div class="dot"></div></div>
+  <div class="banner" id="banner">
+    <span class="badge">到期提醒</span>
+    <span class="msg" id="bannerMsg">酸奶 · 3 天后到期，记得检查</span>
+  </div>
+  <div class="searchbar">
+    <span>🔍</span>
+    <input id="searchInput" placeholder="搜索物品名称或存放位置…" />
+    <button class="go" onclick="doSearch()">搜索</button>
+  </div>
+  <div class="tabs">
+    <div class="tab active" data-t="all" onclick="switchTab('all',this)">全部</div>
+    <div class="tab" data-t="food" onclick="switchTab('food',this)">食品</div>
+    <div class="tab" data-t="study" onclick="switchTab('study',this)">学习</div>
+    <div class="tab" data-t="life" onclick="switchTab('life',this)">生活</div>
+  </div>
+  <div class="list" id="list"></div>
+  <button class="addbtn" onclick="openAdd()">＋ 添加物品</button>
+</div>
+<div class="toast" id="toast"></div>
+<div class="modal" id="addModal">
+  <div class="card">
+    <h3>添加物品</h3>
+    <input id="aName" placeholder="物品名称，如：酸奶" />
+    <input id="aLoc" placeholder="存放位置，如：宿舍冰箱" />
+    <input id="aDate" placeholder="有效期（选填），如：2026-11-09" />
+    <div class="row">
+      <button class="btn cancel" onclick="closeAdd()">取消</button>
+      <button class="btn ok" onclick="addItem()">保存</button>
+    </div>
+  </div>
+</div>
+<div class="modal" id="dupModal">
+  <div class="card">
+    <h3>⚠️ 重复购买提示</h3>
+    <p style="font-size:14px;color:var(--gray);margin-bottom:16px;line-height:1.6;" id="dupMsg"></p>
+    <div class="row">
+      <button class="btn cancel" onclick="closeDup()">仍然购买</button>
+      <button class="btn ok" onclick="closeDup()">取消购买 ✓</button>
+    </div>
+  </div>
+</div>
+<script>
+var items = [
+  {name:"数据线",cat:"life",loc:"书桌第二个抽屉",date:""},
+  {name:"酸奶",cat:"food",loc:"宿舍冰箱",date:"2026-11-09"},
+  {name:"充电宝",cat:"life",loc:"床下收纳盒",date:""},
+  {name:"高数教材",cat:"study",loc:"书架第一层",date:""},
+  {name:"计算器",cat:"study",loc:"书包夹层",date:""},
+  {name:"洗衣液",cat:"life",loc:"阳台柜子",date:""},
+];
+var curTab = "all";
+var curQuery = "";
+var today = new Date(2026,10,6); // 2026-11-06
+var icoMap = {food:"🥛",study:"📚",life:"🧰"};
+var catName = {food:"食品",study:"学习",life:"生活"};
+function daysLeft(ds){
+  if(!ds) return null;
+  var d = new Date(ds); d.setHours(0,0,0,0);
+  var diff = Math.round((d - today)/86400000);
+  return diff;
+}
+function render(){
+  var list = items.filter(function(it){
+    if(curTab!=="all" && it.cat!==curTab) return false;
+    if(curQuery){
+      var q=curQuery.toLowerCase();
+      if(it.name.toLowerCase().indexOf(q)<0 && it.loc.toLowerCase().indexOf(q)<0) return false;
+    }
+    return true;
+  });
+  var el = document.getElementById("list");
+  if(list.length===0){ el.innerHTML = '<div style="text-align:center;color:#999;padding:30px;font-size:14px;">没有找到相关物品</div>'; return; }
+  el.innerHTML = list.map(function(it){
+    var dl = daysLeft(it.date);
+    var tag = "";
+    if(dl!==null && dl<=3 && dl>=0){ tag = '<span class="tag red">'+dl+'天后到期</span>'; }
+    else if(dl!==null && dl<0){ tag = '<span class="tag orange">已过期</span>'; }
+    else { tag = '<span class="tag green">'+catName[it.cat]+'</span>'; }
+    return '<div class="item"><div class="ico" style="background:'+(dl!==null&&dl<=3&&dl>=0?'#FDEAEA':'#E8F5EC')+'">'+icoMap[it.cat]+'</div>'+
+      '<div class="info"><div class="name">'+it.name+'</div><div class="loc">📍 '+it.loc+'</div></div>'+tag+'</div>';
+  }).join("");
+}
+function switchTab(t,el){
+  curTab=t;
+  document.querySelectorAll(".tab").forEach(function(x){x.classList.remove("active");});
+  el.classList.add("active");
+  render();
+}
+function doSearch(){
+  curQuery = document.getElementById("searchInput").value.trim();
+  render();
+}
+function showToast(msg){
+  var t=document.getElementById("toast");
+  t.innerHTML=msg; t.style.display="block";
+  setTimeout(function(){t.style.display="none";},1800);
+}
+function openAdd(){ document.getElementById("addModal").style.display="flex"; }
+function closeAdd(){ document.getElementById("addModal").style.display="none"; }
+function addItem(){
+  var n=document.getElementById("aName").value.trim();
+  var l=document.getElementById("aLoc").value.trim();
+  var d=document.getElementById("aDate").value.trim();
+  if(!n){ showToast("请填写物品名称"); return; }
+  var cat = "life";
+  if(/奶|食品|面包|酸奶|饮料/.test(n)) cat="food";
+  else if(/书|笔|教材|本|计算器|尺/.test(n)) cat="study";
+  items.unshift({name:n,cat:cat,loc:l||"未标注位置",date:d});
+  document.getElementById("addModal").style.display="none";
+  document.getElementById("aName").value="";document.getElementById("aLoc").value="";document.getElementById("aDate").value="";
+  render();
+  showToast("✅ 已添加「"+n+"」");
+}
+function checkDup(){
+  var q = document.getElementById("searchInput").value.trim();
+  var found = items.find(function(it){ return it.name===q; });
+  if(found){
+    document.getElementById("dupMsg").innerHTML = "你已经有「<b>"+found.name+"</b>」了，存放在 <b>"+found.loc+"</b>。<br>确定还要再买一个吗？";
+    document.getElementById("dupModal").style.display="flex";
+  }
+}
+function closeDup(){ document.getElementById("dupModal").style.display="none"; }
+// 搜索时如果命中已有物品，弹出重复购买提示
+var origSearch = doSearch;
+document.getElementById("searchInput").addEventListener("keyup", function(e){
+  if(e.key==="Enter"){ doSearch(); }
+});
+render();
+</script>
+</body>
+</html>
